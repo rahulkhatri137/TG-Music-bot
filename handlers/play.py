@@ -47,8 +47,7 @@ def changeImageSize(maxWidth, maxHeight, image):
     heightRatio = maxHeight / image.size[1]
     newWidth = int(widthRatio * image.size[0])
     newHeight = int(heightRatio * image.size[1])
-    newImage = image.resize((newWidth, newHeight))
-    return newImage
+    return image.resize((newWidth, newHeight))
 
 async def generate_cover(requested_by, title, views, duration, thumbnail):
     async with aiohttp.ClientSession() as session:
@@ -93,7 +92,7 @@ async def generate_cover(requested_by, title, views, duration, thumbnail):
 async def play(_, message: Message):
 
     lel = await message.reply("🔄 **Processing...**")
-    
+
     administrators = await get_administrators(message.chat)
     chid = message.chat.id
 
@@ -131,7 +130,7 @@ async def play(_, message: Message):
         await lel.edit(
             f"<i>Hey {user.first_name}, assistant userbot is not in this chat, ask admin to send /play command for first time to add it.</i>")
         return
-    
+
     audio = (message.reply_to_message.audio or message.reply_to_message.voice) if message.reply_to_message else None
     url = get_url(message)
 
@@ -154,17 +153,19 @@ async def play(_, message: Message):
                     InlineKeyboardButton(
                         text="Channel 🔊",
                         url="https://t.me/Infinity_BOTs")
-                   
+
                 ]
             ]
         )
-        
+
         requested_by = message.from_user.first_name
-        await generate_cover(requested_by, title, views, duration, thumbnail)  
+        await generate_cover(requested_by, title, views, duration, thumbnail)
         file_path = await converter.convert(
-            (await message.reply_to_message.download(file_name))
-            if not path.isfile(path.join("downloads", file_name)) else file_name
+            file_name
+            if path.isfile(path.join("downloads", file_name))
+            else await message.reply_to_message.download(file_name)
         )
+
 
     elif url:
         try:
@@ -180,12 +181,12 @@ async def play(_, message: Message):
             views = results[0]["views"]
             durl = url
             durl = durl.replace("youtube", "youtubepp")
-            
+
             secmul, dur, dur_arr = 1, 0, duration.split(':')
             for i in range(len(dur_arr)-1, -1, -1):
                 dur += (int(dur_arr[i]) * secmul)
                 secmul *= 60
-                
+
             keyboard = InlineKeyboardMarkup(
                 [
                     [
@@ -205,20 +206,20 @@ async def play(_, message: Message):
             duration = "NaN"
             views = "NaN"
             keyboard = InlineKeyboardMarkup(
+                [
                     [
-                        [
-                            InlineKeyboardButton(
-                                text="YouTube 🎬",
-                                url=f"https://youtube.com")
-
-                        ]
+                        InlineKeyboardButton(
+                            text="YouTube 🎬", url="https://youtube.com"
+                        )
                     ]
-                )
+                ]
+            )
+
         if (dur / 60) > DURATION_LIMIT:
              await lel.edit(f"❌ Videos longer than {DURATION_LIMIT} minutes aren't allowed to play!")
              return
         requested_by = message.from_user.first_name
-        await generate_cover(requested_by, title, views, duration, thumbnail)     
+        await generate_cover(requested_by, title, views, duration, thumbnail)
         file_path = await converter.convert(youtube.download(url))
     else:
         if len(message.command) < 2:
@@ -246,12 +247,12 @@ async def play(_, message: Message):
             for i in range(len(dur_arr)-1, -1, -1):
                 dur += (int(dur_arr[i]) * secmul)
                 secmul *= 60
-                
+
         except Exception as e:
             await lel.edit(
                 "❌ Song not found.\n\nTry another song or maybe spell it properly."
             )
-            print(str(e))
+            print(e)
             return
 
         keyboard = InlineKeyboardMarkup(
@@ -267,14 +268,14 @@ async def play(_, message: Message):
                     ]
                 ]
             )
-        
+
         if (dur / 60) > DURATION_LIMIT:
              await lel.edit(f"❌ Videos longer than {DURATION_LIMIT} minutes aren't allowed to play!")
              return
         requested_by = message.from_user.first_name
-        await generate_cover(requested_by, title, views, duration, thumbnail)  
+        await generate_cover(requested_by, title, views, duration, thumbnail)
         file_path = await converter.convert(youtube.download(url))
-  
+
     if message.chat.id in callsmusic.pytgcalls.active_calls:
         position = await queues.put(message.chat.id, file=file_path)
         await message.reply_photo(
@@ -283,8 +284,6 @@ async def play(_, message: Message):
         title, duration, message.from_user.mention(), position
         ),
         reply_markup=keyboard)
-        os.remove("final.png")
-        return await lel.delete()
     else:
         callsmusic.pytgcalls.join_group_call(message.chat.id, file_path)
         await message.reply_photo(
@@ -293,5 +292,6 @@ async def play(_, message: Message):
         caption="**🎵 Song:** {}\n**🕒 Duration:** {} min\n**👤 Added By:** {}\n\n**▶️ Now Playing at `{}`...**".format(
         title, duration, message.from_user.mention(), message.chat.title
         ), )
-        os.remove("final.png")
-        return await lel.delete()
+
+    os.remove("final.png")
+    return await lel.delete()

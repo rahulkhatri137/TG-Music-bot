@@ -22,7 +22,6 @@ from youtube_dl.utils import (
 
 @Client.on_message(filters.command("song") & ~filters.edited)
 async def song(client, message):
-    cap = "@JEBotZ"
     url = message.text.split(None, 1)[1]
     rkp = await message.reply("Processing...")
     if not url:
@@ -94,6 +93,7 @@ async def song(client, message):
     if song:
         await rkp.edit("Uploading...") #ImJanindu
         lol = "./etc/thumb.jpg"
+        cap = "@JEBotZ"
         lel = await message.reply_audio(
                  f"{rip_data['id']}.mp3",
                  duration=int(rip_data["duration"]),
